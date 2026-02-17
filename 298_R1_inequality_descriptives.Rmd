@@ -1,0 +1,341 @@
+---
+title: "J 298"
+author: "Ava Hu"
+date: "Feb. 2026"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+## Let's get started
+
+Set your working directory. 
+
+**setwd("*FILE PATH*")**
+
+Or you can use the drop-down menu: Session -> Set Working Directory -> Choose Directory
+
+
+R uses tools called "packages" to do certain types of tasks. For example, there are package for mapping, graphics, stats, cleaning data and more.
+
+To install anything, here's the syntax: 
+
+install.packages("package_name")
+
+
+Packages are like tools. You have to go to the hardware store once to get the tool and put it in your toolbox. When you need a tool, you get it out of your toolbox. You don't have to go to the hardware store every time you need something. That said, you may need to upgrade your tool or replace a lost tool and go back to the hardware store. You also might need to ask someone at the store for help. (There's lots of help online!) 
+
+Install (go to hardware store) for these packages:
+
+```
+install.packages("tidyverse") #Working with data
+install.packages("dplyr") #R's version of SQL
+install.packages("ggplot2") #for graphics
+install.packages("knitr") #for creating results files
+install.packages("psych") #stats
+install.packages("tidycensus") #access census data
+install.packages("janitor") #data cleaning tools
+```
+
+Library (get them out of your toolbox)
+
+```{r library}
+library(tidyverse)
+library(dplyr) 
+library(ggplot2) 
+library(knitr) 
+library(psych) 
+library(janitor)
+library(tidycensus)
+```
+
+
+## Important reminders about R
+There are MANY ways to do tasks in R. We'll learn a few, but you may run across more later and new packages come online all the time. 
+
+We'll be doing a sample of some stats we can do in R, but I recommend talking to experts to vet your work.
+
+R is CASE SENSITIVE on everything. R doesn't like spaces in file names or field/column names. You can get around it with "", but it usually is easier to just not use them.
+
+If you run commands, the answer will show up in the console below. Highlight the commands below and hit run or command|enter:
+
+mytot=1+2
+mytot
+
+If we want to create a code chunk, which means R will knit the results and the code for your final document add *{r}* to the top and ``` at top and bottom:
+
+```{r}
+mytot=1+2
+mytot
+```
+
+## Load your data
+
+
+Everything in R needs to get loaded into a "data frame" a sort of workspace so R can deal with it.  We'll use read.csv and because our data has field names, we include this "col_names = TRUE."  We're going to load global indicator data from the Global Health Observatory. With the following columns:
+
+ country: country name  
+ code: country code  
+ gni: gross National Income per capital (in US$)  
+ skulspend: education expenditures per capita  
+ death: death rate per 1,000  
+ healthexp: health expenditures per capita  
+ unemp: unemployment rate  
+ water: % with clean water  
+ skul: % enrolled in secondary school  
+ maternal: maternal death rate per 100,000 live births  
+
+
+```
+ind <- read_csv('globalind.csv', col_names = TRUE) # import global indicator data
+view(ind) #view indicator data
+```
+
+I called my table "ind." You could just as easily have called it Sally, but it wouldn't be as easy to remember.
+
+
+To see how the file is structured, along with record count and sample records use:
+
+```
+str(ind)
+
+```
+We have 222 observations (records) and 10 columns or variables.
+The first two fields - are characters, while the other four are numeric - either integer or double
+
+### Summarizing data 
+
+Summarize the data. Note: Use %>% (pipe symbol) to chain multiple commands. 
+To compare, use ==.
+
+The count function serves as both group by and count unlike SQL or Excel, which require two parts. 
+To make the pipe symbol shift-ctrl-m or shift-cmd-m. See keyboard shortcuts tip sheet (https://support.posit.co/hc/en-us/articles/200711853-Keyboard-Shortcuts) for more info. 
+Use <- to put your results in another data frame.
+
+#Select
+
+```
+ind %>% select(country,code,gni) # select three fields
+ind  %>% select(country,code,gni) %>% 
+              arrange(desc(gni)) #select three fields and sort by gni descending
+              
+              
+sally <- ind %>% 
+    select(country,code,gni) %>% 
+    arrange(desc(gni))
+
+
+
+```
+
+#Filter
+
+```
+filter(ind, country == "United States") # results show up in console below 
+
+filter(ind, gni > 60000)
+
+
+sally <- ind %>% 
+  filter(gni > 30000) 
+  
+```
+
+#Put it all together
+
+```
+ind %>% 
+  select(country, code, gni, skulspend) %>% 
+  filter(gni >= 50000) %>% 
+  arrange(desc(skulspend))
+  
+  
+  
+ind %>% 
+  select(country,code, gni, skulspend) %>% 
+  filter(gni >= 50000) %>% 
+  arrange(desc(skulspend))
+  
+  
+```
+#Practice
+1. Which country has the highest healthexp?
+
+ind %>% 
+  select(country,healthexp) %>% 
+  arrange(desc(healthexp))
+  
+answer: United States    11702.
+  
+2. How many countries have unemployment rates higher than 10?
+
+ind %>% 
+  select(country,unemp) %>% 
+  filter(unemp > 10) %>% 
+  count
+
+56
+
+
+3. Think of a question to ask on your own - within the country that have 100% clean water, what's the lowest health expenditures per capita
+
+sally <- ind %>% 
+  select(country,water,healthexp) %>% 
+  filter(water == 100) %>% 
+  arrange(healthexp)
+  
+  
+  
+
+
+Thailand 
+
+### Descriptives
+
+Before diving into statistics, we need to better understand our data. What does the distribution look like? Are the mean and median close? We indicate data frame and variable like this: data_frame_name$variable_name. Let's go back to the indicator data.
+
+```
+mean(ind$gni)
+median(ind$gni) 
+```
+Uh, oh -- We're not getting what I thought we should get. That's because there is missing data in the list of indicators by country. We need to add "na.rm=TRUE" to tell R to ignore the null values.
+
+```
+mean(ind$gni, na.rm = TRUE)
+median(ind$gni,  na.rm = TRUE) 
+
+des <- describe(ind)
+
+```
+
+
+Doing those individually is a lot of work. The 'psych' package we loaded has a handy function called 'describe'. 
+
+```
+describe(ind)
+```
+The first 2 fields are strings, so ignore the output for those. 
+
+Once we've had a look at the data, we can explore it to see if there are any relationships.
+
+
+### Correlations
+
+Let's run some correlations looking at the relationship between skul (secondary school enrollment) and skulspend (spending on schools). We add "use="pairwise.complete.obs" to tell R to ignore missing data between pairs:
+
+```
+cor(ind$skul,ind$skulspend, use="pairwise.complete.obs")
+```
+
+One of the most useful stats tools is the correlation matrix, where you look at every variable against every other variable. 
+
+In this case, let's look at columns 3 through 10. 
+
+```
+cor(ind[3:10], use="pairwise.complete.obs")
+```
+That's a lot of digits. If you'd like to round the output, wrap it in the round command. I'm using 2 decimal places.
+
+```
+round(cor(ind[3:10], use="pairwise.complete.obs"),2)
+```
+
+The strongest correlation is between gni and healthexp.
+
+
+### Visualize your data: Histograms and scatter plots
+
+To see the distribution of your data, draw a histogram.
+
+```
+hist(ind$gni)
+hist(ind$healthexp)
+```
+
+Our results have a positive skew, meaning lots of values on the low end and a long tail to the right. In some analysis you may want to transform the results to get a stronger model.
+
+For example, taking the log10 of variables that are positively skewed can normalize them to bolster your analysis. It is completely reasonable to do this, but it makes it more challenging to explain to readers.
+
+hist(log10(ind$gni))
+hist(log10(ind$healthexp))
+
+To see the relationship between two variables, make a scatter plot. The independent variable is the X (listed first) and the dependent variable is the Y axis (listed second).
+
+```
+plot(ind$gni, ind$healthexp)
+
+
+```
+
+
+If you want to look at scatterplots for multiple variables, use the pairs command:
+```
+pairs(~ gni + healthexp + skul, data = ind)
+```
+
+### Practice with the schools data: 
+
+Use schools.csv 
+
+schools <- read_csv('schools.csv', col_names = TRUE) # import schools data
+
+
+1. Descriptives - to understand the data
+2. Correlation matrix - to find possible relationships
+3. Histograms - on two variables from your correlation matrix
+4. Scatterplot(s) - on those variables to visualize the relationship
+
+
+```{r}
+schools <- read_csv('schools.csv', col_names = TRUE)  #Descriptives
+
+des_school <- describe(schools[5:19]) 
+
+col <- corr.test(schools[5:19], use="pairwise.complete.obs")  #Correlation matrix
+
+hist(log10(schools$attendance)) #Histograms on attendance 
+
+```
+
+```{r}
+hist(schools$poorpct) #Histograms on poor pct
+```
+
+```{r}
+plot(schools$p_moved, schools$attendanc) #plots on attendance 
+```
+```{r}
+corr.test(schools[5:19], use="pairwise.complete.obs")
+```
+
+```{r}
+pairs(~poorpct + p_passed + p_moved, data = schools)
+
+```
+
+
+
+### More practice data
+
+You can use data that's build into R. To see what's available use:
+data()
+
+To start using one of the data sets, use data(name). Let's practice with the cars data:
+
+data(cars)
+view(cars)
+describe(cars)
+cor(cars)
+plot(cars$speed,cars$distance)
+
+
